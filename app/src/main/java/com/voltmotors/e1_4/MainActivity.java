@@ -80,10 +80,11 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         @Override
         public void call(final Object... args) {
             if (socketManager.getSocket() != null) {
-                //ToDo Cada vez que hay stream desde VIoT se ejecutan los on para tener disponibles los ON que emiten cada status del auto desde VIoT.
+                //ToDo Cada vez que hay stream desde VIoT se ejecutan los "on" para tener disponibles los ON que emiten cada status del auto desde VIoT.
                 Log.d(TAG, "VIoT - Stream Ready on VIoT");
                 socketManager.getSocket().on("startEngine", onStartCar);
-                socketManager.getSocket().on("opendoors", onOpenDoors);
+                socketManager.getSocket().on("opendoors", onLockDoors);
+                socketManager.getSocket().on("lights", onLights);
                 socketManager.getSocket().emit("webee.stream.subscribe", "123456:" + enterpriseId + ":5a04c07ec7b10421cc09e543");
             }
         }
@@ -94,17 +95,27 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         public void call(final Object... args) {
             if (socketManager.getSocket() != null) {
                 //ToDo Cada vez que se reciba un encendido de motor se ejectua esta seccion de codigo
-                Log.d(TAG, "VIoT - onStartEngine received ...");
+                Log.d(TAG, "VIoT - onStartEngine event received ...");
             }
         }
     };
 
-    private Emitter.Listener onOpenDoors = new Emitter.Listener() {
+    private Emitter.Listener onLockDoors = new Emitter.Listener() {
         @Override
         public void call(final Object... args) {
             if (socketManager.getSocket() != null) {
                 //ToDo Cada vez que se reciba un cambio en el lock de las puertas se ejectua esta seccion de codigo
-                Log.d(TAG, "VIoT - onOpenDoors received ...");
+                Log.d(TAG, "VIoT - onLockDoors event received ...");
+            }
+        }
+    };
+
+    private Emitter.Listener onLights = new Emitter.Listener() {
+        @Override
+        public void call(final Object... args) {
+            if (socketManager.getSocket() != null) {
+                //ToDo Cada vez que se reciba un cambio en luces se ejectua esta seccion de codigo
+                Log.d(TAG, "VIoT - onLights event received ...");
             }
         }
     };
@@ -755,6 +766,14 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         registerReceiver(receiver, filter);
 
         pendingIntent = PendingIntent.getBroadcast(this, 0, new Intent(getPackageName() + ".USB_PERMISSION"), 0);
+    }
+
+    @Override
+    protected void onDestroy() {
+
+        //ToDo Es MUY IMPORTANTE desuscribirse del stream una vez que la Activity/Fragment o clase contenedora se destruye
+         socketManager.getSocket().emit("webee.stream.unsubscribe", "123456:"+  enterpriseId  +":5a04c07ec7b10421cc09e543");
+
     }
 
     @Override
