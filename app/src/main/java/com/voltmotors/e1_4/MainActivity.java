@@ -10,7 +10,6 @@ import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.preference.PreferenceManager;
 import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MotionEvent;
@@ -81,18 +80,31 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         @Override
         public void call(final Object... args) {
             if (socketManager.getSocket() != null) {
+                //ToDo Cada vez que hay stream desde VIoT se ejecutan los on para tener disponibles los ON que emiten cada status del auto desde VIoT.
                 Log.d(TAG, "VIoT - Stream Ready on VIoT");
                 socketManager.getSocket().on("startEngine", onStartCar);
+                socketManager.getSocket().on("opendoors", onOpenDoors);
                 socketManager.getSocket().emit("webee.stream.subscribe", "123456:" + enterpriseId + ":5a04c07ec7b10421cc09e543");
             }
         }
     };
 
-    private Emitter.Listener onStartCar = new Emitter.Listener() {c
+    private Emitter.Listener onStartCar = new Emitter.Listener() {
         @Override
         public void call(final Object... args) {
             if (socketManager.getSocket() != null) {
+                //ToDo Cada vez que se reciba un encendido de motor se ejectua esta seccion de codigo
                 Log.d(TAG, "VIoT - onStartEngine received ...");
+            }
+        }
+    };
+
+    private Emitter.Listener onOpenDoors = new Emitter.Listener() {
+        @Override
+        public void call(final Object... args) {
+            if (socketManager.getSocket() != null) {
+                //ToDo Cada vez que se reciba un cambio en el lock de las puertas se ejectua esta seccion de codigo
+                Log.d(TAG, "VIoT - onOpenDoors received ...");
             }
         }
     };
@@ -140,7 +152,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         opts.transports = new String[]{WebSocket.NAME};
         //opts.forceNew = true;
         socketManager.createSocket(Constants.VIOT_BASE_URL, opts);
-
 
         socketManager.getSocket().on("authenticated", onAuthenticated);
         socketManager.getSocket().on("lb-pong", onAndroidPongVIOT);
@@ -193,14 +204,15 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                 Log.d(TAG, "VIoT - onConnectEvent");
                 if (socketManager.getSocket() != null) {
                     JSONObject json = getCredentials();
-
+                    Log.v(TAG,json.toString());
                     //---------------------------------------------------------------------------------------------------
-                    try {
-                        enterpriseId = json.getString("enterpriseId");
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                    Log.v(TAG, enterpriseId);
+                    //try {
+//                        enterpriseId = json.getString("enterpriseId");
+                    //} catch (JSONException e) {
+                    //    e.printStackTrace();
+
+                    //}
+                    //Log.v(TAG, enterpriseId);
                     //---------------------------------------------------------------------------------------------------
 
 
@@ -228,9 +240,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         }
     }
 
-
-    @Override
-    public void onReadDataBLESensor(JsonObject message) {
+    public void onReadDataCarensor(JsonObject message) {
+        //ToDo cada vez que se envia informacion de sensores a VIoT hay que invocar esta funcion
         Log.v(TAG, "message" + message);
         socketManager.getSocket().emit("webee-hub-logger", message);
     }

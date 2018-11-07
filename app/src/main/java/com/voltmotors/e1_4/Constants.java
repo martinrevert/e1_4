@@ -14,8 +14,8 @@ public class Constants {
 
     //Webee Testing Enterprise page
     //public static final String FORM_FLOW_PAGE = "https://visual.webee.io/apps/view/5b0c45176e06475826e022a6/3bd115f0-d9fc-40e9-bb48-93bfcc6cdaeb";
-    //public static final String  API_KEY = "d1fab283-1b71-4362-92dd-015ad53d5c91";
-    //public static final String API_SECRET = "f4cc1947-ff68-4d0d-b7b4-bb71fcbd85f7";
+    public static final String  API_KEY = "d1fab283-1b71-4362-92dd-015ad53d5c91";
+    public static final String API_SECRET = "f4cc1947-ff68-4d0d-b7b4-bb71fcbd85f7";
 
     // ####################################################################################
 
@@ -26,8 +26,8 @@ public class Constants {
 
     // ULRM and ALPS POCs #################################################################
 
-    public static final String  API_KEY = "925580c2-bb24-4534-a522-1eb07b4c1c53";
-    public static final String API_SECRET = "0dbc7d5d-b0ee-4884-b12c-bd836e9c5d71";
+    //public static final String  API_KEY = "925580c2-bb24-4534-a522-1eb07b4c1c53";
+    //public static final String API_SECRET = "0dbc7d5d-b0ee-4884-b12c-bd836e9c5d71";
 
     // ULRM and ALPS POCs  BETA ###########################################################
 
