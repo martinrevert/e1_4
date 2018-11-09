@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 import android.util.Log;
+
 import com.example.google.nodejsmanager.nodejsmanager.ConnectionManager;
 import com.example.google.nodejsmanager.nodejsmanager.SocketManager;
 
@@ -59,7 +60,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
     private Context context;
     private String cVersion = "1.1";
     private boolean lPower, lBaliza, lLucesBajas, lLucesPosicion, lLucesAntiDelan, lLucesAntiTras, lAperturaPorton, lAperturaPuertas, lespejos, lespejosdrech, lespejosizq, lfrenomano;
-    private ImageView espejosinactivos, fondocursor,lateralbaul, testfrenomano, cursores,marchas;
+    private ImageView espejosinactivos, fondocursor, lateralbaul, testfrenomano, cursores, marchas;
     private int nskin;
     private ImageButton oEspejosizq;
     private ConstraintLayout Iskin;
@@ -69,12 +70,13 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
     private int connectionIntents = 0;
     private ScheduledExecutorService schedulePingViot;
     //-------------------------------------------------------------------------------------------------------------------
+    private String connectionId;
     private String enterpriseId;
     //-------------------------------------------------------------------------------------------------------------------
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-   //----------------------------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------------------------
 
     private Emitter.Listener onStreamReady = new Emitter.Listener() {
         @Override
@@ -82,20 +84,24 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
             if (socketManager.getSocket() != null) {
                 //ToDo Cada vez que hay stream desde VIoT se ejecutan los "on" para tener disponibles los ON que emiten cada status del auto desde VIoT.
                 Log.d(TAG, "VIoT - Stream Ready on VIoT");
-                socketManager.getSocket().on("startEngine", onStartCar);
-                socketManager.getSocket().on("opendoors", onLockDoors);
-                socketManager.getSocket().on("lights", onLights);
-                socketManager.getSocket().emit("webee.stream.subscribe", "123456:" + enterpriseId + ":5a04c07ec7b10421cc09e543");
+                socketManager.getSocket().on("onengine", onStartCar);
+                socketManager.getSocket().on("ondoors", onLockDoors);
+                socketManager.getSocket().on("onlights", onLights);
+                socketManager.getSocket().emit("webee.stream.subscribe", "123456:" + enterpriseId + ":" + connectionId);
             }
         }
-    };
+    };;
 
     private Emitter.Listener onStartCar = new Emitter.Listener() {
         @Override
         public void call(final Object... args) {
             if (socketManager.getSocket() != null) {
                 //ToDo Cada vez que se reciba un encendido de motor se ejectua esta seccion de codigo
-                Log.d(TAG, "VIoT - onStartEngine event received ...");
+                JSONObject engine = new JSONObject();
+                for (Object value: args){
+                    engine = (JSONObject) value;
+                }
+                Log.v(TAG, "VIoT - onStartEngine event received ..." + engine);
             }
         }
     };
@@ -105,7 +111,11 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         public void call(final Object... args) {
             if (socketManager.getSocket() != null) {
                 //ToDo Cada vez que se reciba un cambio en el lock de las puertas se ejectua esta seccion de codigo
-                Log.d(TAG, "VIoT - onLockDoors event received ...");
+                JSONObject doors = new JSONObject();
+                for (Object value: args){
+                    doors = (JSONObject) value;
+                }
+                Log.v(TAG, "VIoT - onLockDoors event received ..." + doors);
             }
         }
     };
@@ -115,7 +125,11 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         public void call(final Object... args) {
             if (socketManager.getSocket() != null) {
                 //ToDo Cada vez que se reciba un cambio en luces se ejectua esta seccion de codigo
-                Log.d(TAG, "VIoT - onLights event received ...");
+                JSONObject lights = new JSONObject();
+                for (Object value: args){
+                    lights = (JSONObject) value;
+                }
+                Log.v(TAG, "VIoT - onLights event received ..." + lights);
             }
         }
     };
@@ -151,6 +165,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
             }
         }
     };
+
 
     private void connectSocketViot() {
         if (connectionIntents > 3) {
@@ -215,15 +230,16 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                 Log.d(TAG, "VIoT - onConnectEvent");
                 if (socketManager.getSocket() != null) {
                     JSONObject json = getCredentials();
-                    Log.v(TAG,json.toString());
+                    Log.v(TAG, json.toString());
                     //---------------------------------------------------------------------------------------------------
-                    //try {
-//                        enterpriseId = json.getString("enterpriseId");
-                    //} catch (JSONException e) {
-                    //    e.printStackTrace();
-
-                    //}
-                    //Log.v(TAG, enterpriseId);
+                    try {
+                        enterpriseId = json.getString("enterpriseId");
+                        connectionId = json.getString("connectionId");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    Log.v(TAG, enterpriseId);
+                    Log.v(TAG, connectionId);
                     //---------------------------------------------------------------------------------------------------
 
 
@@ -233,7 +249,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                             requestJSONObject.put("id", json.getString("id"));
                             requestJSONObject.put("connectionId", json.getString("connectionId"));
                             requestJSONObject.put("agent", "hub");
-                            requestJSONObject.put("uuid", "AndroidALPSSensorPOC");
+                            requestJSONObject.put("uuid", "VOLTCARDEMO");
                             socketManager.getSocket().emit("webee-auth-strategy", requestJSONObject);
                             Log.i(TAG, "json: " + requestJSONObject);
                         }
@@ -264,18 +280,18 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        lLucesPosicion =false;
-        lLucesBajas=false;
-        lBaliza=false;
-        lAperturaPorton=false;
-        lLucesAntiDelan=false;
-        lLucesAntiTras=false;
-        lAperturaPuertas=false;
-        lespejos=false;
-        lespejosdrech=false;
-        lespejosizq=false;
-        lfrenomano=false;
-        nskin=0;
+        lLucesPosicion = false;
+        lLucesBajas = false;
+        lBaliza = false;
+        lAperturaPorton = false;
+        lLucesAntiDelan = false;
+        lLucesAntiTras = false;
+        lAperturaPuertas = false;
+        lespejos = false;
+        lespejosdrech = false;
+        lespejosizq = false;
+        lfrenomano = false;
+        nskin = 0;
 
         context = this;
 
@@ -288,16 +304,16 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         lateralbaul = (ImageView) findViewById(R.id.Lateralbaul);
         testfrenomano = (ImageView) findViewById(R.id.TestParking);
         oEspejosizq = (ImageButton) findViewById(R.id.ImgBtnEspejosIzq);
-        Iskin =(ConstraintLayout)findViewById(R.id.skin);
+        Iskin = (ConstraintLayout) findViewById(R.id.skin);
         marchas = (ImageView) findViewById(R.id.ImgMarchas);
 
         // ------------- envio datos de socket--------------------
         JsonObject message = new JsonObject();
         try {
 
-            message.addProperty("startEngine",lPower);
-            message.addProperty("batteryPerc",20);
-            message.addProperty("mileage",20);
+            message.addProperty("startEngine", lPower);
+            message.addProperty("batteryPerc", 20);
+            message.addProperty("mileage", 20);
 
         } catch (JsonIOException e) {
             e.printStackTrace();
@@ -384,7 +400,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                 } else {
                     v.setBackgroundResource(R.drawable.luz_de_posicion_off);
                 }
-                lLucesPosicion  = !lLucesPosicion;
+                lLucesPosicion = !lLucesPosicion;
 
             }
         });
@@ -474,8 +490,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         oEspejosderch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!lespejos)
-                {
+                if (!lespejos) {
                     lespejosdrech = !lespejosdrech;
                     if (!lespejosdrech) {
                         v.setBackgroundResource(R.drawable.seleccion_espejo_derecho_on);
@@ -491,8 +506,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         oEspejosizq.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!lespejos)
-                {
+                if (!lespejos) {
                     lespejosizq = !lespejosizq;
                     if (lespejosizq) {
                         v.setBackgroundResource(R.drawable.seleccion_espejo_izquierdo_on);
@@ -534,15 +548,16 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         Button oArriba = (Button) findViewById(R.id.cursor_arriba);
         oArriba.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View v, MotionEvent theMotion) {
-                if (!lespejos)
-                {
+                if (!lespejos) {
                     switch (theMotion.getAction()) {
                         case MotionEvent.ACTION_DOWN: {
                             cursores.setBackgroundResource(R.drawable.cursor_arriba);
-                        }break;
+                        }
+                        break;
                         case MotionEvent.ACTION_UP: {
                             cursores.setBackgroundResource(R.drawable.cursor_neutro);
-                        } break;
+                        }
+                        break;
                     }
                 }
 
@@ -554,15 +569,16 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         Button oAbajo = (Button) findViewById(R.id.cursor_abajo);
         oAbajo.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View v, MotionEvent theMotion) {
-                if (!lespejos)
-                {
+                if (!lespejos) {
                     switch (theMotion.getAction()) {
                         case MotionEvent.ACTION_DOWN: {
                             cursores.setBackgroundResource(R.drawable.cursor_abajo);
-                        }break;
+                        }
+                        break;
                         case MotionEvent.ACTION_UP: {
                             cursores.setBackgroundResource(R.drawable.cursor_neutro);
-                        } break;
+                        }
+                        break;
                     }
                 }
 
@@ -574,15 +590,16 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         Button oDerecha = (Button) findViewById(R.id.cursor_derch);
         oDerecha.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View v, MotionEvent theMotion) {
-                if (!lespejos)
-                {
+                if (!lespejos) {
                     switch (theMotion.getAction()) {
                         case MotionEvent.ACTION_DOWN: {
                             cursores.setBackgroundResource(R.drawable.cursor_derecha);
-                        }break;
+                        }
+                        break;
                         case MotionEvent.ACTION_UP: {
                             cursores.setBackgroundResource(R.drawable.cursor_neutro);
-                        } break;
+                        }
+                        break;
                     }
                 }
 
@@ -594,15 +611,16 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         Button oIzquierda = (Button) findViewById(R.id.cursor_izq);
         oIzquierda.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View v, MotionEvent theMotion) {
-                if (!lespejos)
-                {
+                if (!lespejos) {
                     switch (theMotion.getAction()) {
                         case MotionEvent.ACTION_DOWN: {
                             cursores.setBackgroundResource(R.drawable.cursor_izquierda);
-                        }break;
+                        }
+                        break;
                         case MotionEvent.ACTION_UP: {
                             cursores.setBackgroundResource(R.drawable.cursor_neutro);
-                        } break;
+                        }
+                        break;
                     }
                 }
 
@@ -639,10 +657,12 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                 switch (theMotion.getAction()) {
                     case MotionEvent.ACTION_DOWN: {
                         v.setBackgroundResource(R.drawable.webee_on);
-                    }break;
+                    }
+                    break;
                     case MotionEvent.ACTION_UP: {
                         v.setBackgroundResource(R.drawable.webee_off);
-                    } break;
+                    }
+                    break;
                 }
                 return false;
             }
@@ -656,11 +676,13 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                 switch (theMotion.getAction()) {
                     case MotionEvent.ACTION_DOWN: {
                         v.setBackgroundResource(R.drawable.levanta_vidrios_derecho_bajar_on);
-                    }break;
+                    }
+                    break;
 
                     case MotionEvent.ACTION_UP: {
                         v.setBackgroundResource(R.drawable.levanta_vidrios_derecho_bajar_off);
-                    } break;
+                    }
+                    break;
 
                 }
                 return false;
@@ -674,10 +696,12 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                 switch (theMotion.getAction()) {
                     case MotionEvent.ACTION_DOWN: {
                         v.setBackgroundResource(R.drawable.levanta_vidrios_derecho_subir_on);
-                    }break;
+                    }
+                    break;
                     case MotionEvent.ACTION_UP: {
                         v.setBackgroundResource(R.drawable.levanta_vidrios_derecho_subir_off);
-                    } break;
+                    }
+                    break;
                 }
                 return false;
             }
@@ -690,12 +714,14 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                 switch (theMotion.getAction()) {
                     case MotionEvent.ACTION_DOWN: {
                         v.setBackgroundResource(R.drawable.levanta_vidrios_izquierdo_bajar_on);
-                    }break;
+                    }
+                    break;
 
 
                     case MotionEvent.ACTION_UP: {
                         v.setBackgroundResource(R.drawable.levanta_vidrios_izquierdo_bajar_off);
-                    }break;
+                    }
+                    break;
                 }
                 return false;
             }
@@ -708,10 +734,12 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                 switch (theMotion.getAction()) {
                     case MotionEvent.ACTION_DOWN: {
                         v.setBackgroundResource(R.drawable.levanta_vidrios_izquierdo_subir_on);
-                    }break;
+                    }
+                    break;
                     case MotionEvent.ACTION_UP: {
                         v.setBackgroundResource(R.drawable.levanta_vidrios_izquierdo_subir_off);
-                    }break;
+                    }
+                    break;
                 }
                 return false;
             }
@@ -772,7 +800,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
     protected void onDestroy() {
 
         //ToDo Es MUY IMPORTANTE desuscribirse del stream una vez que la Activity/Fragment o clase contenedora se destruye
-         socketManager.getSocket().emit("webee.stream.unsubscribe", "123456:"+  enterpriseId  +":5a04c07ec7b10421cc09e543");
+        socketManager.getSocket().emit("webee.stream.unsubscribe", "123456:" + enterpriseId + ":" + connectionId);
 
     }
 
@@ -809,18 +837,18 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
             setContentView(R.layout.activity_main);
 
 
-            lLucesPosicion =false;
-            lLucesBajas=false;
-            lBaliza=false;
-            lAperturaPorton=false;
-            lLucesAntiDelan=false;
-            lLucesAntiTras=false;
-            lAperturaPuertas=false;
-            lespejos=false;
-            lespejosdrech=false;
-            lespejosizq=false;
-            lfrenomano=false;
-            nskin=0;
+            lLucesPosicion = false;
+            lLucesBajas = false;
+            lBaliza = false;
+            lAperturaPorton = false;
+            lLucesAntiDelan = false;
+            lLucesAntiTras = false;
+            lAperturaPuertas = false;
+            lespejos = false;
+            lespejosdrech = false;
+            lespejosizq = false;
+            lfrenomano = false;
+            nskin = 0;
 
             espejosinactivos = (ImageView) findViewById(R.id.EspejosInactivos);
             fondocursor = (ImageView) findViewById(R.id.FondoControlEspejos);
@@ -829,11 +857,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
             lateralbaul = (ImageView) findViewById(R.id.Lateralbaul);
             testfrenomano = (ImageView) findViewById(R.id.TestParking);
             oEspejosizq = (ImageButton) findViewById(R.id.ImgBtnEspejosIzq);
-            Iskin =(ConstraintLayout)findViewById(R.id.skin);
+            Iskin = (ConstraintLayout) findViewById(R.id.skin);
             marchas = (ImageView) findViewById(R.id.ImgMarchas);
-
-
-
 
 
             // -------- toogle button de Espejos Derecha ------------------------
@@ -841,8 +866,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
             oEspejosderch.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (!lespejos)
-                    {
+                    if (!lespejos) {
                         lespejosdrech = !lespejosdrech;
                         if (!lespejosdrech) {
                             v.setBackgroundResource(R.drawable.seleccion_espejo_derecho_on);
@@ -861,8 +885,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
             oEspejosizq.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (!lespejos)
-                    {
+                    if (!lespejos) {
                         lespejosizq = !lespejosizq;
                         if (lespejosizq) {
                             v.setBackgroundResource(R.drawable.seleccion_espejo_izquierdo_on);
@@ -931,17 +954,18 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
             Button oArriba = (Button) findViewById(R.id.cursor_arriba);
             oArriba.setOnTouchListener(new View.OnTouchListener() {
                 public boolean onTouch(View v, MotionEvent theMotion) {
-                    if (!lespejos)
-                    {
+                    if (!lespejos) {
                         switch (theMotion.getAction()) {
                             case MotionEvent.ACTION_DOWN: {
                                 cursores.setBackgroundResource(R.drawable.cursor_arriba);
                                 ((DemoMCP2200) demo).sendString("SEA1\r");
-                            }break;
+                            }
+                            break;
                             case MotionEvent.ACTION_UP: {
                                 cursores.setBackgroundResource(R.drawable.cursor_neutro);
                                 ((DemoMCP2200) demo).sendString("SEA0\r");
-                            } break;
+                            }
+                            break;
                         }
                     }
 
@@ -953,17 +977,18 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
             Button oAbajo = (Button) findViewById(R.id.cursor_abajo);
             oAbajo.setOnTouchListener(new View.OnTouchListener() {
                 public boolean onTouch(View v, MotionEvent theMotion) {
-                    if (!lespejos)
-                    {
+                    if (!lespejos) {
                         switch (theMotion.getAction()) {
                             case MotionEvent.ACTION_DOWN: {
                                 cursores.setBackgroundResource(R.drawable.cursor_abajo);
                                 ((DemoMCP2200) demo).sendString("SEB1\r");
-                            }break;
+                            }
+                            break;
                             case MotionEvent.ACTION_UP: {
                                 cursores.setBackgroundResource(R.drawable.cursor_neutro);
                                 ((DemoMCP2200) demo).sendString("SEB0\r");
-                            } break;
+                            }
+                            break;
                         }
                     }
 
@@ -975,17 +1000,18 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
             Button oDerecha = (Button) findViewById(R.id.cursor_derch);
             oDerecha.setOnTouchListener(new View.OnTouchListener() {
                 public boolean onTouch(View v, MotionEvent theMotion) {
-                    if (!lespejos)
-                    {
+                    if (!lespejos) {
                         switch (theMotion.getAction()) {
                             case MotionEvent.ACTION_DOWN: {
                                 cursores.setBackgroundResource(R.drawable.cursor_derecha);
                                 ((DemoMCP2200) demo).sendString("SED1\r");
-                            }break;
+                            }
+                            break;
                             case MotionEvent.ACTION_UP: {
                                 cursores.setBackgroundResource(R.drawable.cursor_neutro);
                                 ((DemoMCP2200) demo).sendString("SED0\r");
-                            } break;
+                            }
+                            break;
                         }
                     }
 
@@ -997,17 +1023,18 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
             Button oIzquierda = (Button) findViewById(R.id.cursor_izq);
             oIzquierda.setOnTouchListener(new View.OnTouchListener() {
                 public boolean onTouch(View v, MotionEvent theMotion) {
-                    if (!lespejos)
-                    {
+                    if (!lespejos) {
                         switch (theMotion.getAction()) {
                             case MotionEvent.ACTION_DOWN: {
                                 cursores.setBackgroundResource(R.drawable.cursor_izquierda);
                                 ((DemoMCP2200) demo).sendString("SEI1\r");
-                            }break;
+                            }
+                            break;
                             case MotionEvent.ACTION_UP: {
                                 cursores.setBackgroundResource(R.drawable.cursor_neutro);
                                 ((DemoMCP2200) demo).sendString("SEI0\r");
-                            } break;
+                            }
+                            break;
                         }
                     }
 
@@ -1023,10 +1050,12 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                         case MotionEvent.ACTION_DOWN: {
                             v.setBackgroundResource(R.drawable.webee_on);
 
-                        }break;
+                        }
+                        break;
                         case MotionEvent.ACTION_UP: {
                             v.setBackgroundResource(R.drawable.webee_off);
-                        } break;
+                        }
+                        break;
                     }
                     return false;
                 }
@@ -1041,12 +1070,14 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                         case MotionEvent.ACTION_DOWN: {
                             v.setBackgroundResource(R.drawable.levanta_vidrios_derecho_bajar_on);
                             ((DemoMCP2200) demo).sendString("SBD1\r");
-                        }break;
+                        }
+                        break;
 
                         case MotionEvent.ACTION_UP: {
                             v.setBackgroundResource(R.drawable.levanta_vidrios_derecho_bajar_off);
                             ((DemoMCP2200) demo).sendString("SBD0\r");
-                        } break;
+                        }
+                        break;
 
                     }
                     return false;
@@ -1061,11 +1092,13 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                         case MotionEvent.ACTION_DOWN: {
                             v.setBackgroundResource(R.drawable.levanta_vidrios_derecho_subir_on);
                             ((DemoMCP2200) demo).sendString("SSD1\r");
-                        }break;
+                        }
+                        break;
                         case MotionEvent.ACTION_UP: {
                             v.setBackgroundResource(R.drawable.levanta_vidrios_derecho_subir_off);
                             ((DemoMCP2200) demo).sendString("SSD0\r");
-                        } break;
+                        }
+                        break;
                     }
                     return false;
                 }
@@ -1079,13 +1112,15 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                         case MotionEvent.ACTION_DOWN: {
                             v.setBackgroundResource(R.drawable.levanta_vidrios_izquierdo_bajar_on);
                             ((DemoMCP2200) demo).sendString("SBI1\r");
-                        }break;
+                        }
+                        break;
 
 
                         case MotionEvent.ACTION_UP: {
                             v.setBackgroundResource(R.drawable.levanta_vidrios_izquierdo_bajar_off);
                             ((DemoMCP2200) demo).sendString("SBI0\r");
-                        }break;
+                        }
+                        break;
                     }
                     return false;
                 }
@@ -1099,11 +1134,13 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                         case MotionEvent.ACTION_DOWN: {
                             v.setBackgroundResource(R.drawable.levanta_vidrios_izquierdo_subir_on);
                             ((DemoMCP2200) demo).sendString("SSI1\r");
-                        }break;
+                        }
+                        break;
                         case MotionEvent.ACTION_UP: {
                             v.setBackgroundResource(R.drawable.levanta_vidrios_izquierdo_subir_off);
                             ((DemoMCP2200) demo).sendString("SSI0\r");
-                        }break;
+                        }
+                        break;
                     }
                     return false;
                 }
@@ -1160,24 +1197,23 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
     }
 
     public void balizaOnClick(View v) {
-        synchronized(demo) {
-            if(demo != null) {
+        synchronized (demo) {
+            if (demo != null) {
                 if (lBaliza) {
                     ((DemoMCP2200) demo).sendString("SBA1\r");
                     v.setBackgroundResource(R.drawable.baliza_on);
-                }
-                else {
+                } else {
                     ((DemoMCP2200) demo).sendString("SBA0\r");
                     v.setBackgroundResource(R.drawable.baliza_off);
                 }
-                lBaliza=!lBaliza;
+                lBaliza = !lBaliza;
             }
         }
     }
 
     public void powerOnClick(View v) {
-        synchronized(demo) {
-            if(demo != null) {
+        synchronized (demo) {
+            if (demo != null) {
                 if (!lPower) {
                     v.setBackgroundResource(R.drawable.encendido_on);
                     ((DemoMCP2200) demo).sendString("SPO1\r");
@@ -1191,8 +1227,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
     }
 
     public void luzbajaOnClick(View v) {
-        synchronized(demo) {
-            if(demo != null) {
+        synchronized (demo) {
+            if (demo != null) {
 
                 if (!lLucesBajas) {
                     v.setBackgroundResource(R.drawable.luz_baja_on);
@@ -1207,8 +1243,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
     }
 
     public void luzposicionOnClick(View v) {
-        synchronized(demo) {
-            if(demo != null) {
+        synchronized (demo) {
+            if (demo != null) {
 
                 if (!lLucesPosicion) {
                     v.setBackgroundResource(R.drawable.luz_de_posicion_on);
@@ -1217,14 +1253,14 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                     v.setBackgroundResource(R.drawable.luz_de_posicion_off);
                     ((DemoMCP2200) demo).sendString("SLP0\r");
                 }
-                lLucesPosicion  = !lLucesPosicion;
+                lLucesPosicion = !lLucesPosicion;
             }
         }
     }
 
     public void niebladelanteraOnClick(View v) {
-        synchronized(demo) {
-            if(demo != null) {
+        synchronized (demo) {
+            if (demo != null) {
 
                 if (!lLucesAntiDelan) {
                     v.setBackgroundResource(R.drawable.luz_delantera_niebla_on);
@@ -1239,8 +1275,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
     }
 
     public void nieblatraseraOnClick(View v) {
-        synchronized(demo) {
-            if(demo != null) {
+        synchronized (demo) {
+            if (demo != null) {
 
                 if (!lLucesAntiTras) {
                     v.setBackgroundResource(R.drawable.luz_trasera_niebla_on);
@@ -1255,8 +1291,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
     }
 
     public void frenomanoOnClick(View v) {
-        synchronized(demo) {
-            if(demo != null) {
+        synchronized (demo) {
+            if (demo != null) {
 
                 if (!lfrenomano) {
                     v.setBackgroundResource(R.drawable.bron_freno_mano_on);
@@ -1273,8 +1309,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
     }
 
     public void aperturapuertasOnClick(View v) {
-        synchronized(demo) {
-            if(demo != null) {
+        synchronized (demo) {
+            if (demo != null) {
 
                 if (!lAperturaPuertas) {
                     v.setBackgroundResource(R.drawable.puertas_lock);
@@ -1289,8 +1325,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
     }
 
     public void aperturaportonOnClick(View v) {
-        synchronized(demo) {
-            if(demo != null) {
+        synchronized (demo) {
+            if (demo != null) {
                 if (!lAperturaPorton) {
                     v.setBackgroundResource(R.drawable.porton_trasero_lock);
                     lateralbaul.setImageResource(R.drawable.vista_lateral_baul_abierto);
@@ -1306,9 +1342,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
     }
 
 
-
-    private void Tostada(String cMsg)
-    {
+    private void Tostada(String cMsg) {
         Toast.makeText(this.getBaseContext(), cMsg, Toast.LENGTH_SHORT).show();
 
     }
@@ -1322,15 +1356,15 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
                 /* If it was a USB device detach event, then get the USB device
                  * that cause the event from the intent.
                  */
-                UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                UsbDevice device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
 
                 if (device != null) {
                     /* Synchronize to demo here to make sure that the main GUI isn't
                      * doing something with the demo at the moment.
                      */
-                    synchronized(demo) {
+                    synchronized (demo) {
                         /* If the demo exits, close it down and free it up */
-                        if(demo != null) {
+                        if (demo != null) {
                             demo.close();
                             demo = null;
                         }
@@ -1345,11 +1379,11 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         @Override
         public void handleMessage(Message msg) {
             /* Determine what type of message was sent. And process it accordingly */
-            if(msg.obj.getClass().equals(MessageButton.class)) {
+            if (msg.obj.getClass().equals(MessageButton.class)) {
                 //updateButton(R.id.button_status, ((MessageButton)msg.obj).isPressed);
-            } else if(msg.obj.getClass().equals(MessagePotentiometer.class)) {
+            } else if (msg.obj.getClass().equals(MessagePotentiometer.class)) {
                 //updatePotentiometer(R.id.potentiometer_status, ((MessagePotentiometer)msg.obj).percentage);
-            } else if(msg.obj.getClass().equals(MessageText.class)) {
+            } else if (msg.obj.getClass().equals(MessageText.class)) {
                 AddComando(((MessageText) msg.obj).message);
             }
         } //handleMessage
@@ -1404,18 +1438,17 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
     }
 
     // agrega caracteres recibidos al comando. cuando encuentra un enter procesa comando
-    private void AddComando(String cComando)
-    {
+    private void AddComando(String cComando) {
         int nPos;
 
         // reemplaza el caracter de avance de linea
-        cComando=cComando.replace("\n", "");
+        cComando = cComando.replace("\n", "");
 
         // busca un caracter de retorno de carro
-        nPos=cComando.indexOf(13);
+        nPos = cComando.indexOf(13);
 
-        if (nPos==-1)
-            cInCmd+=cComando;
+        if (nPos == -1)
+            cInCmd += cComando;
         else {
             // agrega comando hast el enter
             cInCmd += cComando.substring(0, nPos);
@@ -1424,14 +1457,14 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
             // envia a procesar comando
             ProcesarComando(cInCmd);
             // guarda resto del comando para proxima recepcion
-            cInCmd=cComando;
+            cInCmd = cComando;
         }
     }
 
-    private void ProcesarComando(String cComando){
+    private void ProcesarComando(String cComando) {
 
-        cComando=cComando.replace("\r", "");
-        switch (cComando){
+        cComando = cComando.replace("\r", "");
+        switch (cComando) {
 
             case "ILB0":
                 setCmdDescripcion("Subir Vidrio OFF");
