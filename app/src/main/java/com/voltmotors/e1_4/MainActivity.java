@@ -267,8 +267,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionManager
         }
     }
 
-    public void onReadDataCarensor(JsonObject message) {
-        //ToDo cada vez que se envia informacion de sensores a VIoT hay que invocar esta funcion
+    public void onReadDataCarSensor(JsonObject message) {
+        //ToDo cada vez que se envia informacion de sensores hacia VIoT hay que invocar este metodo
         Log.v(TAG, "message" + message);
         socketManager.getSocket().emit("webee-hub-logger", message);
     }
